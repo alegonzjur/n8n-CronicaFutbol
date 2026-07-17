@@ -1,8 +1,8 @@
-# Crónica diaria de fútbol europeo (n8n + Claude API)
+# Crónica diaria de fútbol europeo (n8n + Gemini API)
 
 Workflow de n8n que genera cada día una crónica periodística en español sobre las noticias
 más relevantes de **Premier League, Serie A, Bundesliga y Ligue 1**, excluyendo
-deliberadamente La Liga española. Combina fuentes RSS reales con la API de Claude para
+deliberadamente La Liga española. Combina fuentes RSS reales con la API de Gemini para
 sintetizar y redactar el resumen final.
 
 ## Arquitectura
@@ -14,7 +14,7 @@ Trigger diario (cron 8:00)
         │                          ├──► Unir feeds ──► Filtrar y limitar ──► Construir prompt
         └──► RSS Fútbol Europeo ──┘                                                │
                                                                                     ▼
-                                                                        Llamar a Claude API
+                                                                        Llamar a Gemini API
                                                                                     │
                                                                                     ▼
                                                                           Extraer texto
@@ -49,19 +49,19 @@ elimina duplicados y se queda con las 12 noticias más recientes.
 > tenido cambios de versión recientes. Si algo no carga bien, en la sección "Configuración manual"
 > más abajo tienes cada nodo detallado para recrearlo a mano en 5 minutos.
 
-## Configurar la credencial de Claude API
+## Configurar la credencial de Gemini API
 
-El nodo **"Llamar a Claude API"** usa autenticación por header (`x-api-key`), no un nodo
-nativo de Anthropic, para que el ejemplo sea explícito y fácil de defender en una entrevista.
+El nodo **"Llamar a Gemini API"** usa autenticación por header (`x-goog-api-key`), no un nodo
+nativo de Google, para que el ejemplo sea explícito y fácil de defender en una entrevista.
 
 1. En n8n, ve a **Credentials → New → Header Auth**.
-2. Nombre del header: `x-api-key`
-3. Valor: tu API key de Anthropic (la generas en [console.anthropic.com](https://console.anthropic.com))
-4. Guarda la credencial con el nombre `Claude API Key (x-api-key)`.
-5. Abre el nodo "Llamar a Claude API" en el workflow y selecciona esa credencial en el campo de autenticación (al importar, queda con un placeholder que debes reasignar).
+2. Nombre del header: `x-goog-api-key`
+3. Valor: tu API key de Google (la generas en [console.cloud.google.com](https://console.cloud.google.com))
+4. Guarda la credencial con el nombre `Gemini API Key (x-goog-api-key)`.
+5. Abre el nodo "Llamar a Gemini API" en el workflow y selecciona esa credencial en el campo de autenticación (al importar, queda con un placeholder que debes reasignar).
 
-**Sobre el modelo:** el body de la petición usa `"model": "claude-sonnet-5"`. Antes de tu
-entrevista, verifica en la [documentación de Anthropic](https://docs.claude.com/en/docs/about-claude/models)
+**Sobre el modelo:** el body de la petición usa `"model": "gemini-2.0-flash-exp"`. Antes de tu
+entrevista, verifica en la [documentación de Google](https://ai.google.dev/gemini-api/docs/models/gemini)
 cuál es el identificador de modelo vigente, por si ha cambiado.
 
 ## Configurar la subida automática a GitHub
@@ -87,8 +87,8 @@ inmediatamente de principio a fin independientemente del trigger programado.
 Revisa nodo a nodo el resultado (n8n te deja inspeccionar el output de cada paso):
 1. Los dos RSS deben devolver ítems reales de noticias recientes.
 2. "Filtrar y limitar" debe devolver máximo 12 ítems, ninguno con contenido español.
-3. "Construir prompt" debe mostrar el prompt final que se envía a Claude.
-4. "Llamar a Claude API" debe devolver un 200 con el objeto de respuesta de Anthropic.
+3. "Construir prompt" debe mostrar el prompt final que se envía a Gemini.
+4. "Llamar a Gemini API" debe devolver un 200 con el objeto de respuesta de Google.
 5. "Guardar como .md" genera el fichero final descargable desde la ejecución.
 
 ## Configuración manual (si el import falla)
@@ -101,29 +101,8 @@ Revisa nodo a nodo el resultado (n8n te deja inspeccionar el output de cada paso
 | Unir feeds | Merge | Mode: Combine / Combine All |
 | Filtrar y limitar | Code | Ver `jsCode` en `workflow.json` |
 | Construir prompt | Code | Ver `jsCode` en `workflow.json` |
-| Llamar a Claude API | HTTP Request | POST a `https://api.anthropic.com/v1/messages`, headers `anthropic-version: 2023-06-01`, body JSON con `model`, `max_tokens`, `messages` |
+| Llamar a Gemini API | HTTP Request | POST a `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent`, headers `x-goog-api-key: TU_API_KEY`, body JSON con `contents` y `generationConfig` |
 | Extraer texto | Code | Ver `jsCode` en `workflow.json` |
 | Guardar como .md | Convert to File | Operation: To Text, source: `cronica` |
 | Subir a GitHub | GitHub | Resource: File, Operation: Create, Path: `examples/cronica_futbol_<fecha>.md`, Binary Data: ON |
 
-## Cómo defenderlo en la entrevista
-
-- **Por qué RSS y no una API de noticias de pago:** demuestra que puedes construir un pipeline
-  funcional con fuentes gratuitas y de acceso libre, sin depender de claves adicionales.
-- **Por qué el filtrado por keywords además de elegir feeds ya filtrados:** es un guardrail
-  extra — nunca confíes en que una fuente externa cumpla exactamente el criterio que esperas;
-  se valida explícitamente en tu propio código.
-- **Por qué HTTP Request en vez de un nodo nativo de IA:** muestra que entiendes lo que ocurre
-  "por debajo" de la integración (headers, autenticación, formato del body), no solo cómo usar
-  un nodo preconfigurado como caja negra.
-- **Extensiones naturales** (si te preguntan "¿y cómo lo llevarías a producción?"): enviar la
-  crónica por email/Slack/Telegram en vez de guardarla como fichero, añadir manejo de errores
-  si la API de Claude falla o el RSS no responde, y cachear noticias ya procesadas para no
-  repetirlas de un día a otro.
-
-## Conexión con el Proyecto 3 (energía + MCP + RAG)
-
-Este mismo patrón (fuentes RSS/datos → filtrado → prompt → LLM → salida) es la base que
-reutilizaremos en el proyecto de energía renovable: cambiando las fuentes de datos y añadiendo
-las piezas de MCP (datos estructurados en vivo) y RAG (conocimiento documental), la estructura
-general del workflow n8n es prácticamente la misma.
