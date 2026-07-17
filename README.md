@@ -21,7 +21,14 @@ Trigger diario (cron 8:00)
                                                                                     │
                                                                                     ▼
                                                                         Guardar como .md
+                                                                                    │
+                                                                                    ▼
+                                                                        Subir a GitHub
 ```
+
+El último nodo ("Subir a GitHub") crea un commit automático en el propio repo cada vez que
+se ejecuta el workflow, usando el nodo nativo de GitHub de n8n (API REST, no requiere `git`
+instalado ni configurado en la máquina que corre n8n).
 
 **Fuentes RSS usadas** (verificadas, BBC Sport):
 - Premier League: `https://feeds.bbci.co.uk/sport/football/premier-league/rss.xml`
@@ -57,6 +64,21 @@ nativo de Anthropic, para que el ejemplo sea explícito y fácil de defender en 
 entrevista, verifica en la [documentación de Anthropic](https://docs.claude.com/en/docs/about-claude/models)
 cuál es el identificador de modelo vigente, por si ha cambiado.
 
+## Configurar la subida automática a GitHub
+
+1. Genera un **fine-grained personal access token** en GitHub (Settings → Developer settings
+   → Personal access tokens), con acceso limitado solo a este repositorio y permiso
+   **Contents: Read and write**.
+2. En n8n, crea una credencial **GitHub API** (tipo Access Token) con ese token.
+3. En el nodo "Subir a GitHub", asigna esa credencial y reemplaza `TU_USUARIO_GITHUB` por tu
+   usuario real de GitHub.
+4. La ruta de destino es `examples/cronica_futbol_<fecha>.md` — asegúrate de que la carpeta
+   `examples/` exista en el repo (aunque sea con un `.gitkeep`) antes de la primera ejecución.
+
+**Nota:** la operación `Create` del nodo falla si el fichero ya existe (por ejemplo, si
+ejecutas el workflow dos veces el mismo día durante pruebas). Para depurar, borra el fichero
+de prueba entre ejecuciones o añade temporalmente la hora al nombre del fichero.
+
 ## Probar el workflow
 
 No hace falta esperar al cron: abre el workflow y pulsa **"Test workflow"** — se ejecuta
@@ -82,4 +104,26 @@ Revisa nodo a nodo el resultado (n8n te deja inspeccionar el output de cada paso
 | Llamar a Claude API | HTTP Request | POST a `https://api.anthropic.com/v1/messages`, headers `anthropic-version: 2023-06-01`, body JSON con `model`, `max_tokens`, `messages` |
 | Extraer texto | Code | Ver `jsCode` en `workflow.json` |
 | Guardar como .md | Convert to File | Operation: To Text, source: `cronica` |
+| Subir a GitHub | GitHub | Resource: File, Operation: Create, Path: `examples/cronica_futbol_<fecha>.md`, Binary Data: ON |
 
+## Cómo defenderlo en la entrevista
+
+- **Por qué RSS y no una API de noticias de pago:** demuestra que puedes construir un pipeline
+  funcional con fuentes gratuitas y de acceso libre, sin depender de claves adicionales.
+- **Por qué el filtrado por keywords además de elegir feeds ya filtrados:** es un guardrail
+  extra — nunca confíes en que una fuente externa cumpla exactamente el criterio que esperas;
+  se valida explícitamente en tu propio código.
+- **Por qué HTTP Request en vez de un nodo nativo de IA:** muestra que entiendes lo que ocurre
+  "por debajo" de la integración (headers, autenticación, formato del body), no solo cómo usar
+  un nodo preconfigurado como caja negra.
+- **Extensiones naturales** (si te preguntan "¿y cómo lo llevarías a producción?"): enviar la
+  crónica por email/Slack/Telegram en vez de guardarla como fichero, añadir manejo de errores
+  si la API de Claude falla o el RSS no responde, y cachear noticias ya procesadas para no
+  repetirlas de un día a otro.
+
+## Conexión con el Proyecto 3 (energía + MCP + RAG)
+
+Este mismo patrón (fuentes RSS/datos → filtrado → prompt → LLM → salida) es la base que
+reutilizaremos en el proyecto de energía renovable: cambiando las fuentes de datos y añadiendo
+las piezas de MCP (datos estructurados en vivo) y RAG (conocimiento documental), la estructura
+general del workflow n8n es prácticamente la misma.

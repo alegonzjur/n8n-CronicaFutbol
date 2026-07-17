@@ -1,0 +1,322 @@
+{
+  "name": "Crónica diaria - Fútbol Europeo (sin La Liga)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * *"
+            }
+          ]
+        }
+      },
+      "id": "261e1840-489a-42c9-8728-a61a9a8d40ef",
+      "name": "Trigger diario (8:00)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -240,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://feeds.bbci.co.uk/sport/football/premier-league/rss.xml",
+        "options": {}
+      },
+      "id": "3b95407a-50eb-428a-a83b-f8858055dfa8",
+      "name": "RSS Premier League",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://feeds.bbci.co.uk/sport/football/european/rss.xml",
+        "options": {}
+      },
+      "id": "d9125a52-eaba-4647-9b60-4ba02f6b5f95",
+      "name": "RSS Fútbol Europeo",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "id": "30a7a229-843f-4351-8fcb-6e059283e990",
+      "name": "Unir feeds",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        272,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const spanishKeywords = ['la liga', 'real madrid', 'barcelona', 'atlético de madrid', 'atletico de madrid', 'sevilla fc', 'valencia cf', 'villarreal', 'athletic bilbao', 'real sociedad'];\n\nconst seen = new Set();\nconst cleaned = [];\n\nfor (const item of items) {\n  const title = (item.json.title || '').toString();\n  const content = (item.json.contentSnippet || item.json.content || '').toString();\n  const combined = (title + ' ' + content).toLowerCase();\n\n  // Excluir cualquier noticia que mencione La Liga / equipos españoles\n  if (spanishKeywords.some(k => combined.includes(k))) continue;\n\n  // Evitar duplicados por título\n  if (seen.has(title)) continue;\n  seen.add(title);\n\n  cleaned.push({\n    json: {\n      title: title,\n      link: item.json.link || item.json.guid || '',\n      pubDate: item.json.pubDate || item.json.isoDate || '',\n      snippet: content.substring(0, 300),\n    }\n  });\n}\n\n// Ordenar por fecha descendente (más reciente primero)\ncleaned.sort((a, b) => new Date(b.json.pubDate) - new Date(a.json.pubDate));\n\n// Quedarnos con las 12 noticias más recientes\nreturn cleaned.slice(0, 12);"
+      },
+      "id": "389e2a4a-9ba8-4d2c-8f6f-dce0980362c8",
+      "name": "Filtrar y limitar",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        512,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const noticias = items.map((item, i) => {\n  return `${i + 1}. ${item.json.title}\\n   Fecha: ${item.json.pubDate}\\n   Resumen: ${item.json.snippet}\\n   Fuente: ${item.json.link}`;\n}).join('\\n\\n');\n\nconst prompt = `Eres un periodista deportivo especializado en fútbol europeo. A continuación tienes una lista de titulares y resúmenes recientes de la Premier League, Serie A, Bundesliga y Ligue 1 (se excluye deliberadamente La Liga española).\n\nRedacta una crónica en español de entre 300 y 400 palabras que:\n- Agrupe las noticias más relevantes por liga cuando tenga sentido.\n- Tenga un tono periodístico, ágil y profesional (no una simple lista).\n- Destaque 3-4 noticias como las más importantes del día.\n- Termine con una frase breve a modo de titular resumen.\n\nNoticias disponibles:\n\n${noticias}`;\n\nreturn [{ json: { prompt, num_noticias: items.length } }];"
+      },
+      "id": "65072231-e642-4da1-8bc2-da6f703c4296",
+      "name": "Construir prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        752,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = items[0].json;\nconst text = response.candidates?.[0]?.content?.parts?.[0]?.text || JSON.stringify(response);\n\nreturn [{\n  json: {\n    cronica: text,\n    fecha: new Date().toISOString().slice(0, 10),\n  }\n}];"
+      },
+      "id": "b7dd9f3d-6f3a-4d56-a1a6-4cad1006f721",
+      "name": "Extraer texto",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1232,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "toText",
+        "sourceProperty": "cronica",
+        "options": {
+          "fileName": "={{ 'cronica_futbol_' + $json.fecha + '.md' }}"
+        }
+      },
+      "id": "e56b3a80-89f2-4c84-94b1-4ef52e77df06",
+      "name": "Guardar como .md",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1472,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contents: [ { parts: [ { text: $json.prompt } ] } ] }) }}",
+        "options": {}
+      },
+      "id": "e6d5b1c1-eb1a-4d85-8ff8-223152669cf7",
+      "name": "Llamar a Gemini API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        992,
+        128
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "09vDNCZbQbSrMa4G",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "owner": {
+          "__rl": true,
+          "value": "alegonzjur",
+          "mode": "list",
+          "cachedResultName": "alegonzjur",
+          "cachedResultUrl": "https://github.com/alegonzjur"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "n8n-CronicaFutbol",
+          "mode": "list",
+          "cachedResultName": "n8n-CronicaFutbol",
+          "cachedResultUrl": "https://github.com/alegonzjur/n8n-CronicaFutbol"
+        },
+        "filePath": "=crónicas/cronica_futbol_{{ $json.fecha }}.md",
+        "binaryData": true,
+        "commitMessage": "=Crónica automática del {{ $json.fecha }}",
+        "additionalParameters": {
+          "branch": {
+            "branch": "main"
+          }
+        }
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1.1,
+      "position": [
+        1680,
+        128
+      ],
+      "id": "bdac8645-4319-47db-994c-e333c1f0b523",
+      "name": "Create a file",
+      "webhookId": "f289994c-ca4c-458d-a950-def71427c6a7",
+      "credentials": {
+        "githubApi": {
+          "id": "TKTAoiOS7NKd7bCE",
+          "name": "GitHub account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Trigger diario (8:00)": {
+      "main": [
+        [
+          {
+            "node": "RSS Premier League",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS Fútbol Europeo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Premier League": {
+      "main": [
+        [
+          {
+            "node": "Unir feeds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Fútbol Europeo": {
+      "main": [
+        [
+          {
+            "node": "Unir feeds",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Unir feeds": {
+      "main": [
+        [
+          {
+            "node": "Filtrar y limitar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtrar y limitar": {
+      "main": [
+        [
+          {
+            "node": "Construir prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Construir prompt": {
+      "main": [
+        [
+          {
+            "node": "Llamar a Gemini API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer texto": {
+      "main": [
+        [
+          {
+            "node": "Guardar como .md",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Llamar a Gemini API": {
+      "main": [
+        [
+          {
+            "node": "Extraer texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar como .md": {
+      "main": [
+        [
+          {
+            "node": "Create a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "7014d18c-a4b5-4bb3-afa9-0518cec86032",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a3cabcf53934885f02aae2f1896194696d4a6f405430b30d4458c20ddb2f19b8"
+  },
+  "nodeGroups": [],
+  "id": "J4FhNE5uh9yOksGL",
+  "tags": []
+}
