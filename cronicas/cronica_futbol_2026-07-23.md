@@ -1,0 +1,13 @@
+**Movimientos sísmicos en el mercado europeo: entre fichajes de alto perfil y cambios institucionales**
+
+El mercado de fichajes en Europa vive jornadas frenéticas mientras los clubes terminan de apuntalar sus plantillas. En la **Premier League**, el Bournemouth ha sido uno de los grandes protagonistas, invirtiendo 25,7 millones de libras en el delantero Álvaro Rodríguez. No obstante, el movimiento de salida más sonado en Inglaterra es la partida de Harry Winks del Leicester rumbo al Cagliari, marcando una fuga de talento hacia la Serie A. Mientras tanto, Crystal Palace refuerza su retaguardia con la llegada de Óscar Mingueza como agente libre.
+
+El fútbol italiano, por su parte, busca recuperar la normalidad institucional tras confirmarse que los fiscales han solicitado archivar el caso por presunto fraude deportivo contra el máximo responsable de los árbitros de la Serie A. En el plano deportivo, la Fiorentina apuesta por integrar al defensa Alex Jiménez, quien llegará cedido desde el Bournemouth en medio de una investigación abierta por parte de su club.
+
+En el resto del continente, la **Bundesliga** se asegura una pieza defensiva de primer nivel con el traspaso de Maxime Esteve al RB Leipzig, procedente del Burnley por 27,3 millones de libras. En la **Ligue 1**, el impacto es táctico: el Paris FC ha anunciado la contratación de Liam Rosenior, exentrenador del Chelsea, quien buscará imprimir su sello en el fútbol francés. Asimismo, la salida de Mason Greenwood del Marsella hacia el Fenerbahce cierra un capítulo mediático importante para la liga gala.
+
+En otros frentes de actualidad, la UEFA ha sentado cátedra sobre el uso del VAR, aclarando que, a diferencia de los criterios aplicados en la Copa del Mundo 2026, los árbitros no utilizarán la revisión de video para sancionar posibles simulaciones o "piscinazos". Por otro lado, el Derby County sigue moviéndose en el mercado alemán y ha cerrado el fichaje del mediocampista Filip Bilbija, quien deja el Paderborn tras el ascenso del conjunto germano. Finalmente, la noticia más alentadora llega desde Dinamarca, donde Christian Eriksen iniciará su proceso de rehabilitación en casa tras el colapso sufrido el pasado mes de junio.
+
+**Los puntos clave de la semana:** La solidez del RB Leipzig en el mercado, el giro en la gestión arbitral italiana y la esperada recuperación de Christian Eriksen.
+
+**El mercado europeo no descansa: entre fichajes millonarios y ajustes en el protocolo VAR.**
